@@ -27,8 +27,8 @@ set (GPTL_Fortran_MODS ${CMAKE_CURRENT_BINARY_DIR}/perf_mod.mod
 add_library (gptl ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
 
 target_include_directories (gptl
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
 
 target_compile_definitions (gptl
   PUBLIC INCLUDE_CMAKE_FCI)
@@ -54,14 +54,25 @@ endif ()
 #  DEFINE THE INSTALL
 #==============================================================================
 
+target_include_directories (gptl
+  PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
 # Library
-install (TARGETS gptl DESTINATION lib)
+install (TARGETS gptl
+  EXPORT PIOGPTLTargets
+  LIBRARY DESTINATION lib
+  INCLUDES DESTINATION include)
 
 # Header/Include File
 install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/gptl.h DESTINATION include)
 
 # Fortran Modules
 install (FILES ${GPTL_Fortran_MODS} DESTINATION include)
+
+install(EXPORT PIOGPTLTargets
+  FILE PIOGPTLTargets.cmake
+  NAMESPACE PIO::
+  DESTINATION lib/cmake/PIO)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
@@ -74,7 +85,7 @@ if (ENABLE_PAPI)
     target_compile_definitions (gptl
       PUBLIC HAVE_PAPI)
     target_include_directories (gptl
-      PUBLIC ${PAPI_INCLUDE_DIRECTORIES})
+      PUBLIC "$<BUILD_INTERFACE:${PAPI_INCLUDE_DIRECTORIES}>")
     target_link_libraries (gptl
       PUBLIC ${PAPI_LIBRARIES})
   endif ()
@@ -87,7 +98,7 @@ if (ENABLE_LIBRT)
     target_compile_definitions (gptl
       PUBLIC HAVE_LIBRT)
     target_include_directories (gptl
-      PUBLIC ${LIBRT_INCLUDE_DIRECTORIES})
+      PUBLIC "$<BUILD_INTERFACE:${LIBRT_INCLUDE_DIRECTORIES}>")
     target_link_libraries (gptl
       PUBLIC ${LIBRT_LIBRARIES})
   endif ()
@@ -99,7 +110,7 @@ if (PIO_USE_MPISERIAL)
     target_compile_definitions (gptl
       PRIVATE HAVE_MPI)
     target_include_directories (gptl
-      PUBLIC ${MPISERIAL_C_INCLUDE_DIRS}
+      PUBLIC "$<BUILD_INTERFACE:${MPISERIAL_C_INCLUDE_DIRS}>"
       PUBLIC ${MPISERIAL_Fortran_INCLUDE_DIRS})
     target_link_libraries (gptl
       PUBLIC ${MPISERIAL_C_LIBRARIES}

@@ -49,11 +49,11 @@ include_directories(
 
 # Include the clib source directory
 target_include_directories (pioc
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")
 
 # Include the ncint source directory
 target_include_directories (pioc
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../ncint)
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ncint>")
 
 # System and compiler CPP directives
 target_compile_definitions (pioc
@@ -76,11 +76,24 @@ endif()
 #  DEFINE THE INSTALL
 #==============================================================================
 
+set_target_properties(pioc PROPERTIES EXPORT_NAME PIO_C)
+
+target_include_directories (pioc
+  PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
 # Library
-install (TARGETS pioc DESTINATION lib)
+install (TARGETS pioc
+  EXPORT PIOCTargets
+  LIBRARY DESTINATION lib
+  INCLUDES DESTINATION include)
 
 # Include/Header Files
 install (FILES pio.h uthash.h DESTINATION include)
+
+install(EXPORT PIOCTargets
+  FILE PIOCTargets.cmake
+  NAMESPACE PIO::
+  DESTINATION lib/cmake/PIO)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
@@ -90,7 +103,7 @@ if (MPISERIAL_C_FOUND)
     target_compile_definitions (pioc
       PRIVATE MPI_SERIAL)
     target_include_directories (pioc
-      PUBLIC ${MPISERIAL_C_INCLUDE_DIRS})
+      PUBLIC "$<BUILD_INTERFACE:${MPISERIAL_C_INCLUDE_DIRS}>")
     target_link_libraries (pioc
       PUBLIC ${MPISERIAL_C_LIBRARIES})
     set (WITH_PNETCDF FALSE)
@@ -103,7 +116,7 @@ if (PIO_ENABLE_TIMING)
   if (GPTL_C_FOUND)
     message (STATUS "Found GPTL C: ${GPTL_C_LIBRARIES}")
     target_include_directories (pioc
-      PUBLIC ${GPTL_C_INCLUDE_DIRS})
+      PUBLIC "$<BUILD_INTERFACE:${GPTL_C_INCLUDE_DIRS}>")
     target_link_libraries (pioc
       PUBLIC ${GPTL_C_LIBRARIES})
   else ()
@@ -118,7 +131,7 @@ endif ()
 #===== NetCDF-C =====
 if (NetCDF_C_FOUND)
   target_include_directories (pioc
-    PUBLIC ${NetCDF_C_INCLUDE_DIRS})
+    PUBLIC "$<BUILD_INTERFACE:${NetCDF_C_INCLUDE_DIRS}>")
   target_link_libraries (pioc
     PUBLIC ${NetCDF_C_LIBRARIES})
   if (${NetCDF_C_LOGGING_ENABLED})
@@ -131,7 +144,7 @@ endif ()
 #===== PnetCDF-C =====
 if (PnetCDF_C_FOUND)
   target_include_directories (pioc
-    PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
+    PUBLIC "$<BUILD_INTERFACE:${PnetCDF_C_INCLUDE_DIRS}>")
   target_link_libraries (pioc
     PUBLIC ${PnetCDF_C_LIBRARIES})
 
@@ -141,7 +154,7 @@ endif ()
 
 #===== Add EXTRAs =====
 target_include_directories (pioc
-  PUBLIC ${PIO_C_EXTRA_INCLUDE_DIRS})
+  PUBLIC "$<BUILD_INTERFACE:${PIO_C_EXTRA_INCLUDE_DIRS}>")
 target_link_libraries (pioc
   PUBLIC ${PIO_C_EXTRA_LIBRARIES})
 target_compile_options (pioc
@@ -164,7 +177,7 @@ if (PIO_USE_MPISERIAL)
     target_compile_definitions (pioc
       PRIVATE _MPISERIAL)
     target_include_directories (pioc
-      PUBLIC ${MPISERIAL_C_INCLUDE_DIRS})
+      PUBLIC "$<BUILD_INTERFACE:${MPISERIAL_C_INCLUDE_DIRS}>")
     target_link_libraries (pioc
       PUBLIC ${MPISERIAL_C_LIBRARIES})
 
