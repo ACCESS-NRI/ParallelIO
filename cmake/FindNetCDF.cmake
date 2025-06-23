@@ -136,6 +136,12 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
             endif ()
 
+            # Targets
+            add_library (NetCDF::NetCDF_${NCDFcomp} UNKNOWN IMPORTED)
+            set_target_properties (NetCDF::NetCDF_${NCDFcomp} PROPERTIES
+                                   IMPORTED_LOCATION "${NetCDF_${NCDFcomp}_LIBRARY}"
+                                   INTERFACE_INCLUDE_DIRECTORIES "${NetCDF_${NCDFcomp}_INCLUDE_DIRS}"
+                                   INTERFACE_LINK_LIBRARIES "${NetCDF_${NCDFcomp}_LIBRARIES}")
         endif ()
 
     endif ()

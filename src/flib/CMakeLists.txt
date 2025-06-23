@@ -165,10 +165,8 @@ if (PIO_USE_MPISERIAL)
   if (MPISERIAL_Fortran_FOUND)
     target_compile_definitions (piof
       PRIVATE _MPISERIAL)
-    target_include_directories (piof
-      PUBLIC ${MPISERIAL_Fortran_INCLUDE_DIRS})
     target_link_libraries (piof
-      PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
+      PUBLIC MPISERIAL::MPISERIAL_Fortran)
 
     set (WITH_PNETCDF FALSE)
     set (MPI_Fortran_INCLUDE_PATH ${MPISERIAL_Fortran_INCLUDE_DIRS})
@@ -222,10 +220,7 @@ endif ()
 if (PIO_ENABLE_TIMING)
   if (GPTL_Fortran_Perf_FOUND)
     message (STATUS "Found GPTL Fortran Perf: ${GPTL_Fortran_Perf_LIBRARIES}")
-    target_include_directories (piof
-      PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
-    target_link_libraries (piof
-      PUBLIC ${GPTL_Fortran_LIBRARIES})
+    target_link_libraries (piof PUBLIC GPTL::GPTL_Fortran_Perf)
   else ()
     message (STATUS "Using internal GPTL Fortran library for timing")
     target_link_libraries (piof
@@ -235,18 +230,13 @@ endif ()
 
 #===== NetCDF-Fortran =====
 if (NetCDF_Fortran_FOUND)
-  target_include_directories (piof
-    PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
-  target_link_libraries (piof
-    PUBLIC ${NetCDF_Fortran_LIBRARIES})
+  target_link_libraries (piof PUBLIC NetCDF::NetCDF_Fortran)
 endif ()
 
 #===== PnetCDF =====
 if (PnetCDF_Fortran_FOUND)
-  target_include_directories (piof
-    PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
   target_link_libraries (piof
-    PUBLIC ${PnetCDF_Fortran_LIBRARIES})
+    PUBLIC PnetCDF::PnetCDF_Fortran)
 
   # Check library for varn functions
   set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_Fortran_LIBRARY})

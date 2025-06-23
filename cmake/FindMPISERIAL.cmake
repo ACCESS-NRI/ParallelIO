@@ -39,6 +39,17 @@ foreach (MPISERIAL_comp IN LISTS MPISERIAL_FIND_VALID_COMPONENTS)
         # Search for the package
         find_package_component(MPISERIAL COMPONENT ${MPISERIAL_comp})
 
+        # Continue only if component found
+        if (MPISERIAL_${MPISERIAL_comp}_FOUND)
+
+            # Targets
+            add_library (MPISERIAL::MPISERIAL_${MPISERIAL_comp} UNKNOWN IMPORTED)
+            set_target_properties (MPISERIAL::MPISERIAL_${MPISERIAL_comp} PROPERTIES
+                                   IMPORTED_LOCATION "${MPISERIAL_${MPISERIAL_comp}_LIBRARY}"
+                                   INTERFACE_INCLUDE_DIRECTORIES "${MPISERIAL_${MPISERIAL_comp}_INCLUDE_DIRS}"
+                                   INTERFACE_LINK_LIBRARIES "${MPISERIAL_${MPISERIAL_comp}_LIBRARIES}")
+        endif ()
+
     endif ()
 
 endforeach ()

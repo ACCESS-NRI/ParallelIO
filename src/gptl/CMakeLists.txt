@@ -86,10 +86,8 @@ if (ENABLE_PAPI)
   if (PAPI_FOUND)
     target_compile_definitions (gptl
       PUBLIC HAVE_PAPI)
-    target_include_directories (gptl
-      PUBLIC ${PAPI_INCLUDE_DIRECTORIES})
     target_link_libraries (gptl
-      PUBLIC ${PAPI_LIBRARIES})
+      PUBLIC PAPI::PAPI)
   endif ()
 endif ()
 
@@ -99,10 +97,8 @@ if (ENABLE_LIBRT)
   if (LIBRT_FOUND)
     target_compile_definitions (gptl
       PUBLIC HAVE_LIBRT)
-    target_include_directories (gptl
-      PUBLIC ${LIBRT_INCLUDE_DIRECTORIES})
     target_link_libraries (gptl
-      PUBLIC ${LIBRT_LIBRARIES})
+      PUBLIC LIBRT::LIBRT)
   endif ()
 endif ()
 
@@ -111,12 +107,9 @@ if (PIO_USE_MPISERIAL)
   if (MPISERIAL_C_FOUND AND MPISERIAL_Fortran_FOUND)
     target_compile_definitions (gptl
       PRIVATE HAVE_MPI)
-    target_include_directories (gptl
-      PUBLIC ${MPISERIAL_C_INCLUDE_DIRS}
-      PUBLIC ${MPISERIAL_Fortran_INCLUDE_DIRS})
     target_link_libraries (gptl
-      PUBLIC ${MPISERIAL_C_LIBRARIES}
-      PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
+      PUBLIC MPISERIAL::MPISERIAL_C
+      PUBLIC MPISERIAL::MPISERIAL_Fortran)
 
     set (MPI_C_LIBRARIES ${MPISERIAL_C_LIBRARIES})
     set (MPI_Fortran_INCLUDE_PATH ${MPISERIAL_Fortran_INCLUDE_DIRS})

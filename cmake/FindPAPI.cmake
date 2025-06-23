@@ -25,4 +25,15 @@ if (NOT PAPI_FOUND)
     # Search for the package
     find_package_component(PAPI)
 
+    # Continue only if component found
+    if (PAPI_FOUND)
+
+        # Targets
+        add_library (PAPI::PAPI UNKNOWN IMPORTED)
+        set_target_properties (PAPI::PAPI PROPERTIES
+                               IMPORTED_LOCATION "${PAPI_LIBRARY}"
+                               INTERFACE_INCLUDE_DIRECTORIES "${PAPI_INCLUDE_DIRS}"
+                               INTERFACE_LINK_LIBRARIES "${PAPI_LIBRARIES}")
+    endif ()
+
 endif ()

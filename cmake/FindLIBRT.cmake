@@ -25,4 +25,15 @@ if (NOT LIBRT_FOUND)
     # Search for the package
     find_package_component(LIBRT)
 
+    # Continue only if component found
+    if (LIBRT_FOUND)
+
+        # Targets
+        add_library (LIBRT::LIBRT UNKNOWN IMPORTED)
+        set_target_properties (LIBRT::LIBRT PROPERTIES
+                               IMPORTED_LOCATION "${LIBRT_LIBRARY}"
+                               INTERFACE_INCLUDE_DIRECTORIES "${LIBRT_INCLUDE_DIRS}"
+                               INTERFACE_LINK_LIBRARIES "${LIBRT_LIBRARIES}")
+    endif ()
+
 endif ()

@@ -61,6 +61,12 @@ foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
                            HINTS ${PnetCDF_${PNCDFcomp}_INCLUDE_DIR}
                            MACRO_REGEX "PNETCDF_VERSION_")
 
+            # Targets
+            add_library (PnetCDF::PnetCDF_${PNCDFcomp} UNKNOWN IMPORTED)
+            set_target_properties (PnetCDF::PnetCDF_${PNCDFcomp} PROPERTIES
+                                   IMPORTED_LOCATION "${PnetCDF_${PNCDFcomp}_LIBRARY}"
+                                   INTERFACE_INCLUDE_DIRECTORIES "${PnetCDF_${PNCDFcomp}_INCLUDE_DIRS}"
+                                   INTERFACE_LINK_LIBRARIES "${PnetCDF_${PNCDFcomp}_LIBRARIES}")
         endif ()
 
     endif ()

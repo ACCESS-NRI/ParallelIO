@@ -100,27 +100,12 @@ install(EXPORT PIOCTargets
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
-# MPI test done at top level
-if (MPISERIAL_C_FOUND)
-    target_compile_definitions (pioc
-      PRIVATE MPI_SERIAL)
-    target_include_directories (pioc
-      PUBLIC ${MPISERIAL_C_INCLUDE_DIRS})
-    target_link_libraries (pioc
-      PUBLIC ${MPISERIAL_C_LIBRARIES})
-    set (WITH_PNETCDF FALSE)
-endif ()
-
-
 
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
   if (GPTL_C_FOUND)
     message (STATUS "Found GPTL C: ${GPTL_C_LIBRARIES}")
-    target_include_directories (pioc
-      PUBLIC ${GPTL_C_INCLUDE_DIRS})
-    target_link_libraries (pioc
-      PUBLIC ${GPTL_C_LIBRARIES})
+    target_link_libraries (pioc PUBLIC GPTL::GPTL_C)
   else ()
     message (STATUS "Using internal GPTL C library for timing")
     target_link_libraries (pioc
@@ -132,10 +117,7 @@ endif ()
 
 #===== NetCDF-C =====
 if (NetCDF_C_FOUND)
-  target_include_directories (pioc
-    PUBLIC ${NetCDF_C_INCLUDE_DIRS})
-  target_link_libraries (pioc
-    PUBLIC ${NetCDF_C_LIBRARIES})
+  target_link_libraries (pioc PUBLIC NetCDF::NetCDF_C)
   if (${NetCDF_C_LOGGING_ENABLED})
     # netcdf.h needs this to be defined to use netCDF logging.
     target_compile_definitions (pioc
@@ -145,10 +127,8 @@ endif ()
 
 #===== PnetCDF-C =====
 if (PnetCDF_C_FOUND)
-  target_include_directories (pioc
-    PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
   target_link_libraries (pioc
-    PUBLIC ${PnetCDF_C_LIBRARIES})
+    PUBLIC PnetCDF::PnetCDF_C)
 
   # Check library for varn functions
   set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
@@ -178,10 +158,8 @@ if (PIO_USE_MPISERIAL)
   if (MPISERIAL_C_FOUND)
     target_compile_definitions (pioc
       PRIVATE _MPISERIAL)
-    target_include_directories (pioc
-      PUBLIC ${MPISERIAL_C_INCLUDE_DIRS})
     target_link_libraries (pioc
-      PUBLIC ${MPISERIAL_C_LIBRARIES})
+      PUBLIC MPISERIAL::MPISERIAL_C)
 
     set (WITH_PNETCDF FALSE)
     set (MPI_C_INCLUDE_PATH ${MPISERIAL_C_INCLUDE_DIRS})

@@ -67,6 +67,17 @@ foreach (GPTL_comp IN LISTS GPTL_FIND_VALID_COMPONENTS)
             find_package_component(GPTL COMPONENT ${GPTL_comp})
         endif ()
 
+        # Continue only if component found
+        if (GPTL_${GPTL_comp}_FOUND)
+
+            # Targets
+            add_library (GPTL::GPTL_${GPTL_comp} UNKNOWN IMPORTED)
+            set_target_properties (GPTL::GPTL_${GPTL_comp} PROPERTIES
+                                   IMPORTED_LOCATION "${GPTL_${GPTL_comp}_LIBRARY}"
+                                   INTERFACE_INCLUDE_DIRECTORIES "${GPTL_${GPTL_comp}_INCLUDE_DIRS}"
+                                   INTERFACE_LINK_LIBRARIES "${GPTL_${GPTL_comp}_LIBRARIES}")
+        endif ()
+
     endif ()
 
 endforeach ()
