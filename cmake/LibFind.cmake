@@ -224,6 +224,13 @@ function (find_package_component PKG)
         if (${PKG}_PATHS)
             list (APPEND SEARCH_DIRS ${${PKG}_PATHS})
         endif ()
+        if (CMAKE_PREFIX_PATH)
+            list (APPEND SEARCH_DIRS ${CMAKE_PREFIX_PATH})
+        endif ()
+        if (DEFINED ENV{CMAKE_PREFIX_PATH})
+            cmake_path(CONVERT $ENV{CMAKE_PREFIX_PATH} TO_CMAKE_PATH_LIST _CMAKE_PREFIX_PATH_ENV_LIST)
+            list (APPEND SEARCH_DIRS ${_CMAKE_PREFIX_PATH_ENV_LIST})
+        endif ()
 
         # Start the search for the include file and library file. Only overload
         # if the variable is not defined.
