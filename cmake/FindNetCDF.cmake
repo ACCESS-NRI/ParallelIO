@@ -58,6 +58,12 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             # Checks
             if (NCDFcomp STREQUAL C)
 
+                # Check C language support is enabled
+                get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+                if(NOT C IN_LIST languages)
+                    message(FATAL_ERROR "C language support is not enabled")
+                endif()
+
                 # Check version
                 check_version (NetCDF
                                NAME "netcdf_meta.h"
