@@ -153,3 +153,14 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
     endif ()
 
 endforeach ()
+
+unset (_NetCDF_REQUIRED_VARS)
+foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+    list (APPEND _NetCDF_REQUIRED_VARS "NetCDF_${NCDFcomp}_FOUND")
+endforeach ()
+
+# set NetCDF_FOUND to TRUE if all required variables are TRUE and report which
+# components have been found and which are missing
+find_package_handle_standard_args (NetCDF
+                                   REQUIRED_VARS ${_NetCDF_REQUIRED_VARS}
+                                   HANDLE_COMPONENTS)
