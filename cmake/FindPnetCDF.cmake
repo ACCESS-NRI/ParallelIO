@@ -72,3 +72,14 @@ foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
     endif ()
 
 endforeach ()
+
+unset (_PnetCDF_REQUIRED_VARS)
+foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
+    list (APPEND _PnetCDF_REQUIRED_VARS "PnetCDF_${PNCDFcomp}_FOUND")
+endforeach ()
+
+# set PnetCDF_FOUND to TRUE if all required variables are TRUE and report which
+# components have been found and which are missing
+find_package_handle_standard_args (PnetCDF
+                                   REQUIRED_VARS ${_PnetCDF_REQUIRED_VARS}
+                                   HANDLE_COMPONENTS)
