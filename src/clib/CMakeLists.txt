@@ -49,11 +49,11 @@ include_directories(
 
 # Include the clib source directory
 target_include_directories (pioc
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")
 
 # Include the ncint source directory
 target_include_directories (pioc
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../ncint)
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ncint>")
 
 # System and compiler CPP directives
 target_compile_definitions (pioc
@@ -76,11 +76,26 @@ endif()
 #  DEFINE THE INSTALL
 #==============================================================================
 
+include(GNUInstallDirs)
+
+set_target_properties(pioc PROPERTIES EXPORT_NAME PIO_C)
+
+target_include_directories (pioc
+  PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
 # Library
-install (TARGETS pioc DESTINATION lib)
+install (TARGETS pioc
+  EXPORT PIOCTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Include/Header Files
-install (FILES pio.h uthash.h DESTINATION include)
+install (FILES pio.h uthash.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT PIOCTargets
+  FILE PIOCTargets.cmake
+  NAMESPACE PIO::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PIO)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
@@ -141,7 +156,7 @@ endif ()
 
 #===== Add EXTRAs =====
 target_include_directories (pioc
-  PUBLIC ${PIO_C_EXTRA_INCLUDE_DIRS})
+  PUBLIC "$<BUILD_INTERFACE:${PIO_C_EXTRA_INCLUDE_DIRS}>")
 target_link_libraries (pioc
   PUBLIC ${PIO_C_EXTRA_LIBRARIES})
 target_compile_options (pioc

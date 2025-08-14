@@ -27,8 +27,8 @@ set (GPTL_Fortran_MODS ${CMAKE_CURRENT_BINARY_DIR}/perf_mod.mod
 add_library (gptl ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
 
 target_include_directories (gptl
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
 
 target_compile_definitions (gptl
   PUBLIC INCLUDE_CMAKE_FCI)
@@ -54,14 +54,27 @@ endif ()
 #  DEFINE THE INSTALL
 #==============================================================================
 
+include(GNUInstallDirs)
+
+target_include_directories (gptl
+  PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
 # Library
-install (TARGETS gptl DESTINATION lib)
+install (TARGETS gptl
+  EXPORT PIOGPTLTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Header/Include File
-install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/gptl.h DESTINATION include)
+install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/gptl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Fortran Modules
-install (FILES ${GPTL_Fortran_MODS} DESTINATION include)
+install (FILES ${GPTL_Fortran_MODS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT PIOGPTLTargets
+  FILE PIOGPTLTargets.cmake
+  NAMESPACE PIO::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PIO)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES

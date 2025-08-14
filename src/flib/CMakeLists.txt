@@ -48,9 +48,9 @@ endif ()
 
 # Include flib source and binary directories (for Fortran modules)
 target_include_directories (piof
-  PUBLIC ${CMAKE_BINARY_DIR}
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>"
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
 
 # System and compiler CPP directives
 target_compile_definitions (piof
@@ -104,11 +104,26 @@ endif ()
 #  DEFINE THE INSTALL
 #==============================================================================
 
+include(GNUInstallDirs)
+
+set_target_properties (piof PROPERTIES EXPORT_NAME PIO_Fortran)
+
+target_include_directories (piof
+  PUBLIC "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
 # Library
-install (TARGETS piof DESTINATION lib)
+install (TARGETS piof
+  EXPORT PIOFortranTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Fortran Modules
-install (FILES ${PIO_Fortran_MODS} DESTINATION include)
+install (FILES ${PIO_Fortran_MODS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT PIOFortranTargets
+  FILE PIOFortranTargets.cmake
+  NAMESPACE PIO::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PIO)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
@@ -239,7 +254,7 @@ endif ()
 
 #===== Add EXTRAs =====
 target_include_directories (piof
-  PUBLIC ${PIO_Fortran_EXTRA_INCLUDE_DIRS})
+  PUBLIC "$<BUILD_INTERFACE:${PIO_Fortran_EXTRA_INCLUDE_DIRS}>")
 target_link_libraries (piof
   PUBLIC ${PIO_Fortran_EXTRA_LIBRARIES})
 target_compile_options (piof
