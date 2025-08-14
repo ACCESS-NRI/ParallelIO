@@ -50,3 +50,16 @@ foreach(_comp ${_PIO_supported_components})
     include("${CMAKE_CURRENT_LIST_DIR}/PIO${_comp}Targets.cmake")
   endif()
 endforeach()
+
+# Find dependencies of required components
+include(CMakeFindDependencyMacro)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
+if(C IN_LIST _PIO_required_components)
+  find_dependency(NetCDF COMPONENTS C)
+endif()
+if(Fortran IN_LIST _PIO_required_components)
+  find_dependency(NetCDF COMPONENTS Fortran)
+endif()
+
+list(REMOVE_ITEM CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})

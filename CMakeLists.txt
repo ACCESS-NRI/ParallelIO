@@ -499,6 +499,22 @@ configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/PIOConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PIO)
 
 install(FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindGPTL.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindHDF5.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindLIBRT.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindLIBZ.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindMPE.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindMPISERIAL.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindNetCDF.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindPAPI.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindPnetCDF.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindSZIP.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibCheck.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFind.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryHDF5_HAS_SZIP.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryNetCDF_DAP.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryNetCDF_PARALLEL.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryNetCDF_PNETCDF.c"  "${CMAKE_CURRENT_BINARY_DIR}/PIOConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/PIOConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/PIOConfigVersion.cmake"
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PIO)
