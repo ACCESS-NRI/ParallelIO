@@ -425,8 +425,25 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
         int ndims = iodesc->ndims;
 #ifdef _PNETCDF
         int rrcnt = 0; /* Number of subarray requests (pnetcdf only). */
-        PIO_Offset *startlist[num_regions]; /* Array of start arrays for ncmpi_iput_varn(). */
-        PIO_Offset *countlist[num_regions]; /* Array of count  arrays for ncmpi_iput_varn(). */
+        /* num_regions grows with the local element count for
+         * non-contiguous decompositions, so the total size is unbounded.
+         * Allocating on the heap to avoid stack overflows.
+         * calloc() so the entry pointers start NULL.
+         * NOTE: the error returns in this function do not release these;
+         * they are all fatal paths that abort the run. */
+        PIO_Offset **startlist = NULL; /* Array of start arrays for ncmpi_iput_varn(). */
+        PIO_Offset **countlist = NULL; /* Array of count  arrays for ncmpi_iput_varn(). */
+        if (file->iotype == PIO_IOTYPE_PNETCDF && num_regions > 0)
+        {
+            startlist = calloc((size_t)num_regions, sizeof(PIO_Offset *));
+            countlist = calloc((size_t)num_regions, sizeof(PIO_Offset *));
+            if (!startlist || !countlist)
+            {
+                free(startlist);
+                free(countlist);
+                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+            }
+        }
 
         ierr = ncmpi_wait_all(file->fh, NC_REQ_ALL, NULL, NULL);
 #endif /* _PNETCDF */
@@ -495,7 +512,7 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
                     for (int i = 0; i < fndims; i++)
                     {
                         startlist[rrcnt][i] = start[i];
-                        countlist[rrcnt][i] = count[i]; 
+                        countlist[rrcnt][i] = count[i];
                         PLOG((3, "startlist[%d][%d] = %lld countlist[%d][%d] = %lld", rrcnt, i,
                               startlist[rrcnt][i], rrcnt, i, countlist[rrcnt][i]));
                    }
@@ -675,7 +692,10 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
                     {
                         free(startlist[i]);
                         free(countlist[i]);
+                        startlist[i] = NULL;
+                        countlist[i] = NULL;
                     }
+                    rrcnt = 0;
                 }
                 break;
 #endif
@@ -687,6 +707,17 @@ write_darray_multi_par(file_desc_t *file, int nvars, int fndims, const int *vari
             if (region)
                 region = region->next;
         } /* next regioncnt */
+
+#ifdef _PNETCDF
+        /* Any per-region entries were released above; release the arrays. */
+        for (int i = 0; i < rrcnt; i++)
+        {
+            free(startlist[i]);
+            free(countlist[i]);
+        }
+        free(startlist);
+        free(countlist);
+#endif /* _PNETCDF */
     } /* endif (ios->ioproc) */
 
     /* Check the return code from the netCDF/pnetcdf call. */
@@ -1000,7 +1031,7 @@ recv_and_write_data(file_desc_t *file, const int *varids, const int *frame,
 			if (file->iotype == PIO_IOTYPE_GDAL)
 			    ierr = GDALc_shp_write_float_field(file->pio_ncid, varids[nv], start, count, bufptr);
 			else
-#endif		        
+#endif
                         if ((ierr = nc_put_vara(file->fh, varids[nv], start, count, bufptr)))
                             return check_netcdf2(ios, NULL, ierr, __FILE__, __LINE__);
 		      }
@@ -1082,16 +1113,36 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
     /* Only IO tasks participate in this code. */
     if (ios->ioproc)
     {
-        size_t tmp_start[fndims * num_regions]; /* A start array for each region. */
-        size_t tmp_count[fndims * num_regions]; /* A count array for each region. */
+        /* num_regions grows with the local element count for
+         * non-contiguous decompositions, so the total size is unbounded.
+         * Allocating on the heap to avoid stack overflows. */
+        size_t *tmp_start = NULL; /* A start array for each region. */
+        size_t *tmp_count = NULL; /* A count array for each region. */
 
         PLOG((3, "num_regions = %d", num_regions));
+
+        if (num_regions > 0)
+        {
+            size_t nelem = (size_t)fndims * (size_t)num_regions;
+            tmp_start = malloc(nelem * sizeof(size_t));
+            tmp_count = malloc(nelem * sizeof(size_t));
+            if (!tmp_start || !tmp_count)
+            {
+                free(tmp_start);
+                free(tmp_count);
+                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+            }
+        }
 
         /* Fill the tmp_start and tmp_count arrays, which contain the
          * start and count arrays for all regions. */
         if ((ierr = find_all_start_count(region, num_regions, fndims, iodesc->ndims, vdesc,
                                          tmp_start, tmp_count)))
+        {
+            free(tmp_start);
+            free(tmp_count);
             return pio_err(ios, file, ierr, __FILE__, __LINE__);
+        }
 
         /* Tasks other than 0 will send their data to task 0. */
         if (ios->io_rank > 0)
@@ -1100,7 +1151,11 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
              * to task 0. */
             if ((ierr = send_all_start_count(ios, iodesc, llen, num_regions, nvars, fndims,
                                              tmp_start, tmp_count, iobuf)))
+            {
+                free(tmp_start);
+                free(tmp_count);
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
+            }
         }
         else
         {
@@ -1108,8 +1163,15 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
 
             if ((ierr = recv_and_write_data(file, varids, frame, iodesc, llen, num_regions, nvars, fndims,
                                             tmp_start, tmp_count, iobuf)))
+            {
+                free(tmp_start);
+                free(tmp_count);
                 return pio_err(ios, file, ierr, __FILE__, __LINE__);
+            }
         }
+
+        free(tmp_start);
+        free(tmp_count);
     }
 
 #ifdef TIMING
@@ -1192,8 +1254,27 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
 #ifdef _PNETCDF
         size_t tmp_bufsize = 1;
         int rrlen = 0;
-        PIO_Offset *startlist[iodesc->maxregions];
-        PIO_Offset *countlist[iodesc->maxregions];
+        /* For a decomposition with many regions per IO task -- e.g. an
+         * ESMF mesh read via PIOc_InitDecomp_ReadOnly with PIO_REARR_SUBSET
+         * over scattered node ids might exceed the stack limit, and
+         * cause a stack overflow. Raising the stack limit might not
+         * be sufficient, and dependent on the problem setup.
+         * Allocating on the heap bypasses this stack limit issue.
+         * calloc() so that the entry pointers start NULL, which makes
+         * the cleanup paths below safe, even in the presence of errors. */
+        PIO_Offset **startlist = NULL;
+        PIO_Offset **countlist = NULL;
+        if (file->iotype == PIO_IOTYPE_PNETCDF && iodesc->maxregions > 0)
+        {
+            startlist = calloc((size_t)iodesc->maxregions, sizeof(PIO_Offset *));
+            countlist = calloc((size_t)iodesc->maxregions, sizeof(PIO_Offset *));
+            if (!startlist || !countlist)
+            {
+                free(startlist);
+                free(countlist);
+                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+            }
+        }
 #endif
 
         /* buffer is incremented by byte and loffset is in terms of
@@ -1355,7 +1436,16 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
                                                 vdesc->record, startlist, countlist, &filetype);
                     ierr = ncmpi_get_vard_all(file->fh, vid, filetype, iobuf, iodesc->llen, iodesc->mpitype);
                     if(filetype != MPI_DATATYPE_NULL && (mpierr = MPI_Type_free(&filetype)))
+                    {
+                        for (int i = 0; i < rrlen; i++)
+                        {
+                            free(startlist[i]);
+                            free(countlist[i]);
+                        }
+                        free(startlist);
+                        free(countlist);
                         return check_mpi(NULL, NULL, mpierr, __FILE__, __LINE__);
+                    }
 
 #else
                     //printf("rllen %d mpitype %d\n",iodesc->rllen, iodesc->mpitype);
@@ -1369,7 +1459,10 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
 //                        PLOG((3,"startlist %d %d countlist %d %d",startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]));
                         free(startlist[i]);
                         free(countlist[i]);
+                        startlist[i] = NULL;
+                        countlist[i] = NULL;
                     }
+                    rrlen = 0;
                 }
             }
             break;
@@ -1380,12 +1473,29 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
 
             /* Check return code. */
             if (ierr)
+            {
+#ifdef _PNETCDF
+                for (int i = 0; i < rrlen; i++)
+                {
+                    free(startlist[i]);
+                    free(countlist[i]);
+                }
+                free(startlist);
+                free(countlist);
+#endif
                 return check_netcdf(file, ierr, __FILE__,__LINE__);
+            }
 
             /* Move to next region. */
             if (region)
                 region = region->next;
         } /* next regioncnt */
+
+#ifdef _PNETCDF
+        /* Any per-region entries were released above; release the arrays. */
+        free(startlist);
+        free(countlist);
+#endif
     }
 
 #ifdef TIMING
@@ -1468,10 +1578,28 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
         io_region *region;
         size_t start[fndims];
         size_t count[fndims];
-        size_t tmp_start[fndims * iodesc->maxregions];
-        size_t tmp_count[fndims * iodesc->maxregions];
         size_t tmp_bufsize;
         void *bufptr;
+
+        /* For a decomposition with many regions per IO task -- e.g. an
+         * ESMF mesh read via PIOc_InitDecomp_ReadOnly with PIO_REARR_SUBSET
+         * over scattered node ids might exceed the stack limit, and
+         * cause a stack overflow. Raising the stack limit might not
+         * be sufficient, and dependent on the problem setup.
+         * Allocating on the heap bypasses this stack limit issue. */
+        size_t *tmp_start = NULL;
+        size_t *tmp_count = NULL;
+        if (iodesc->maxregions > 0)
+        {
+            size_t nelem = (size_t)fndims * (size_t)iodesc->maxregions;
+            if (!(tmp_start = malloc(nelem * sizeof(size_t))))
+                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+            if (!(tmp_count = malloc(nelem * sizeof(size_t))))
+            {
+                free(tmp_start);
+                return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+            }
+        }
 
         /* buffer is incremented by byte and loffset is in terms of
            the iodessc->mpitype so we need to multiply by the size of
@@ -1572,8 +1700,23 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
              * other IO tasks. */
             int maxregions = 0;
             size_t loffset, regionsize;
-            size_t this_start[fndims * iodesc->maxregions];
-            size_t this_count[fndims * iodesc->maxregions];
+            /* Allocated on the heap to avoid any stack overflow issues */
+            size_t *this_start = NULL;
+            size_t *this_count = NULL;
+            if (iodesc->maxregions > 0)
+            {
+                size_t nelem = (size_t)fndims * (size_t)iodesc->maxregions;
+                this_start = malloc(nelem * sizeof(size_t));
+                this_count = malloc(nelem * sizeof(size_t));
+                if (!this_start || !this_count)
+                {
+                    free(this_start);
+                    free(this_count);
+                    free(tmp_start);
+                    free(tmp_count);
+                    return pio_err(ios, file, PIO_ENOMEM, __FILE__, __LINE__);
+                }
+            }
 
             for (int rtask = 1; rtask <= ios->num_iotasks; rtask++)
             {
@@ -1692,10 +1835,22 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
 
                     if ((mpierr = MPI_Send(iobuf, tmp_bufsize, iodesc->mpitype, rtask,
                                            4 * ios->num_iotasks + rtask, ios->io_comm)))
+                    {
+                        free(this_start);
+                        free(this_count);
+                        free(tmp_start);
+                        free(tmp_count);
                         return check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
+                    }
                 }
             }
+
+            free(this_start);
+            free(this_count);
         }
+
+        free(tmp_start);
+        free(tmp_count);
     }
 
 #ifdef TIMING
